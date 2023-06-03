@@ -1,4 +1,4 @@
-module github.com/StanleyLex/hw-test
+module github.com/StanleyLex/hw01_hello_otus
 
 go 1.19
 
