@@ -1,5 +1,5 @@
 package hw02unpackstring
-
+//HW02
 import (
 	"errors"
 	"strconv"
