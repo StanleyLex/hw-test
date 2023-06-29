@@ -11,10 +11,12 @@ import (
 
 var ErrInvalidString = errors.New("invalid string")
 
-const slash string = "slash"
-const digit string = "digit"
-const letter string = "letter"
-const stop string = "stop"
+const (
+	slash  string = "slash"
+	digit  string = "digit"
+	letter string = "letter"
+	stop   string = "stop"
+)
 
 func makeConf(confString string) []string {
 	var confSlice []string
@@ -49,20 +51,20 @@ func Unpack(oldString string) (string, error) {
 			case confSlice[index] == digit && confSlice[index+1] == digit:
 				return "", ErrInvalidString
 			case confSlice[index] == digit && confSlice[index+1] == slash:
-				result.WriteString(string(sliceString[index]))
+				result.WriteString(sliceString[index])
 			case confSlice[index] == slash:
 				continue
 			case confSlice[index] == letter && confSlice[index+1] == digit:
-				result.WriteString(string(sliceString[index]))
+				result.WriteString(sliceString[index])
 			case confSlice[index] == digit && confSlice[index+1] == letter:
 				count, _ := strconv.Atoi(sliceString[index])
-				result.WriteString(strings.Repeat(string(sliceString[index+1]), count))
+				result.WriteString(strings.Repeat(sliceString[index+1], count))
 				koff++
 			case (confSlice[index] == letter || confSlice[index] == digit) && confSlice[index+1] == stop:
-				result.WriteString(string(sliceString[index]))
-				break
+				result.WriteString(sliceString[index])
+				return stringutil.Reverse(result.String()), nil
 			case confSlice[index] == letter && confSlice[index+1] == letter:
-				result.WriteString(string(sliceString[index]))
+				result.WriteString(sliceString[index])
 			}
 		}
 	}
