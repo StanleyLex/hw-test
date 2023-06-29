@@ -5,68 +5,64 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	"golang.org/x/example/stringutil"
 )
 
 var ErrInvalidString = errors.New("invalid string")
 
-const (
-	slash  string = "slash"
-	digit  string = "digit"
-	letter string = "letter"
-	stop   string = "stop"
-)
+func ErrCheck(chars string) error {
+	var prev rune
 
-func makeConf(confString string) []string {
-	var confSlice []string
-
-	for _, i := range confString {
+	for index, char := range chars {
 		switch {
-		case string(i) == `\`:
-			confSlice = append(confSlice, slash)
-		case unicode.IsDigit(i):
-			confSlice = append(confSlice, digit)
-		case unicode.IsLetter(i):
-			confSlice = append(confSlice, letter)
+		case unicode.IsDigit(char) && index == 0:
+			return ErrInvalidString
+		case unicode.IsDigit(char) && unicode.IsDigit(prev):
+			return ErrInvalidString
+		default:
+			prev = char
 		}
 	}
-	confSlice = append(confSlice, stop)
-	return confSlice
+	return nil
 }
 
-func Unpack(oldString string) (string, error) {
+func Unpack(chars string) (string, error) {
 	var result strings.Builder
-	reverseString := stringutil.Reverse(oldString)
-	sliceString := strings.Split(reverseString, "")
-	confSlice := makeConf(reverseString)
-	koff := 0
+	var prev rune
 
-	for index := range sliceString {
-		index += koff
-		if index < len(sliceString) {
-			switch {
-			case confSlice[len(oldString)-1] == digit:
-				return "", ErrInvalidString
-			case confSlice[index] == digit && confSlice[index+1] == digit:
-				return "", ErrInvalidString
-			case confSlice[index] == digit && confSlice[index+1] == slash:
-				result.WriteString(sliceString[index])
-			case confSlice[index] == slash:
-				continue
-			case confSlice[index] == letter && confSlice[index+1] == digit:
-				result.WriteString(sliceString[index])
-			case confSlice[index] == digit && confSlice[index+1] == letter:
-				count, _ := strconv.Atoi(sliceString[index])
-				result.WriteString(strings.Repeat(sliceString[index+1], count))
-				koff++
-			case (confSlice[index] == letter || confSlice[index] == digit) && confSlice[index+1] == stop:
-				result.WriteString(sliceString[index])
-				return stringutil.Reverse(result.String()), nil
-			case confSlice[index] == letter && confSlice[index+1] == letter:
-				result.WriteString(sliceString[index])
+	if err := ErrCheck(chars); err != nil {
+		return "", err
+	}
+
+	for _, char := range chars {
+		switch {
+		case unicode.IsLetter(char) && prev == 0:
+			result.WriteRune(char)
+			prev = char
+		case unicode.IsDigit(char) && unicode.IsLetter(prev):
+			count, _ := strconv.Atoi(string(char))
+			if count != 0 {
+				result.WriteString(strings.Repeat(string(prev), count-1))
+				prev = char
+			} else {
+				bytes := []byte(result.String())
+				result.Reset()
+				result.Write(bytes[:len(bytes)-1])
+				prev = char
 			}
+		case unicode.IsLetter(char) && unicode.IsLetter(prev):
+			result.WriteRune(char)
+			prev = char
+		case unicode.IsLetter(char) && unicode.IsDigit(prev):
+			result.WriteRune(char)
+			prev = char
+		case unicode.IsDigit(char) && string(prev) == `\`:
+			result.WriteRune(char)
+		case string(char) == `\` && unicode.IsDigit(prev):
+			prev = char
+		case string(char) == `\` && unicode.IsLetter(prev):
+			prev = char
 		}
 	}
-	return stringutil.Reverse(result.String()), nil
+
+	return result.String(), nil
 }
